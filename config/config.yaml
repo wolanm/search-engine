@@ -1,0 +1,5 @@
+server:
+  port: :4000
+  version: 1.0
+  jwtSecret: "38324-search-engine"
+  metrics: 127.0.0.1:4000
