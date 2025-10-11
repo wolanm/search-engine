@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/wolanm/search-engine/app/gateway/routes"
 	"github.com/wolanm/search-engine/config"
+	"github.com/wolanm/search-engine/loading"
 	"net/http"
 	"os"
 	"os/signal"
@@ -30,11 +31,11 @@ func startListen() {
 
 func main() {
 	// 配置加载
-	config.InitConfig()
+	loading.Load()
 
-	// rpc 初始化
+	// TODO: rpc 初始化
 
-	// etcd 注册
+	// TODO: etcd 注册
 
 	// 启动 web 服务
 	go startListen()
