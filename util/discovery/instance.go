@@ -1,7 +1,8 @@
 package discovery
 
 import (
-	"fmt"
+	"encoding/json"
+	"google.golang.org/grpc/resolver"
 	"time"
 )
 
@@ -17,15 +18,23 @@ type ServiceNode struct {
 	LastHeartbeat time.Time         `json:"last_heartbeat"` // 最后心跳
 }
 
-// BuildPrefix 构建 etcd key 的前缀
-func (node *ServiceNode) BuildPrefix() string {
-	if node.Version == "" {
-		return fmt.Sprintf("/%s/", node.ServiceName)
-	}
-
-	return fmt.Sprintf("/%s/%s/", node.ServiceName, node.Version)
+func (node *ServiceNode) BuildRegistryPath() string {
+	return "/service/" + node.ServiceName
 }
 
-func (node *ServiceNode) BuildRegistryPath() string {
-	return fmt.Sprintf("%s%s", node.BuildPrefix(), node.Endpoint)
+func ParseValue(value []byte) (ServiceNode, error) {
+	node := ServiceNode{}
+	if err := json.Unmarshal(value, &node); err != nil {
+		return node, err
+	}
+
+	return node, nil
+}
+
+// ConvertToGRPCAddress 将 addrMap 转为 addrList
+func ConvertToGRPCAddress(mp map[string]resolver.Address) (addrList []resolver.Address) {
+	for _, v := range mp {
+		addrList = append(addrList, v)
+	}
+	return
 }
