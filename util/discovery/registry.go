@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/sirupsen/logrus"
+	log "github.com/wolanm/search-engine/logger"
 	"go.etcd.io/etcd/client/v3"
 )
 
@@ -16,11 +16,11 @@ type ServiceRegistry struct {
 	stopChan      chan struct{}
 	keepaliveChan <-chan *clientv3.LeaseKeepAliveResponse
 	ttl           int64
-	logger        *logrus.Logger
+	logger        *log.Logger
 }
 
 // NewServiceRegistry /*
-func NewServiceRegistry(endpoints []string, logger *logrus.Logger) (*ServiceRegistry, error) {
+func NewServiceRegistry(endpoints []string, logger *log.Logger) (*ServiceRegistry, error) {
 	client, err := clientv3.New(clientv3.Config{
 		Endpoints:   endpoints,
 		DialTimeout: 5 * time.Second,
@@ -79,7 +79,7 @@ func (sr *ServiceRegistry) register() error {
 	return nil
 }
 
-func (sr *ServiceRegistry) Stop() {
+func (sr *ServiceRegistry) stop() {
 	sr.stopChan <- struct{}{}
 }
 

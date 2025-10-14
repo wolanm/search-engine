@@ -3,3 +3,17 @@ server:
   version: 1.0
   jwtSecret: "38324-search-engine"
   metrics: 127.0.0.1:4000
+
+services:
+  gateway:
+    name: gateway
+    addr:
+      - 127.0.0.1:20001
+    metrics:
+      - 127.0.0.1:30001
+  index_platform:
+    name: index_platform
+    addr:
+      - 127.0.0.1:20005
+    metrics:
+      - 127.0.0.1:30005

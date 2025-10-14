@@ -2,6 +2,7 @@ package discovery
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	log "github.com/wolanm/search-engine/logger"
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -9,24 +10,15 @@ import (
 	"time"
 )
 
-var logger *log.Logger
-
 // CustomFormatter 自定义日志格式器
 type CustomFormatter struct {
 	Module string // 模块名称
 }
 
-func initLogger() {
-	logger = log.SimpleLogger("resolver")
-}
-
-func init() {
-	initLogger()
-}
-
 type ResolverBuilder struct {
 	EtcdAddrs []string
 	schema    string
+	logger    *log.Logger
 }
 
 type Resolver struct {
@@ -36,6 +28,7 @@ type Resolver struct {
 	key     string // 解析的地址
 	watchCh clientv3.WatchChan
 	addrMap map[string]resolver.Address // 服务提供者存储到 etcd 的 <key, value> 对
+	logger  *log.Logger
 }
 
 func (rb *ResolverBuilder) Scheme() string {
@@ -47,6 +40,7 @@ func (rb *ResolverBuilder) Build(target resolver.Target, cc resolver.ClientConn,
 		closeCh: make(chan struct{}),
 		key:     fmt.Sprintf("/service/%s", target.Endpoint()),
 		cc:      cc,
+		logger:  rb.logger,
 	}
 
 	var err error
@@ -56,22 +50,22 @@ func (rb *ResolverBuilder) Build(target resolver.Target, cc resolver.ClientConn,
 	})
 
 	if err != nil {
-		logger.Error("new etcd client error: ", err)
+		rb.logger.Error("new etcd client error: ", err)
 		return nil, err
 	}
 
 	if err := r.start(); err != nil {
-		logger.Error("resolver start failed, error: ", err)
+		rb.logger.Error("resolver start failed, error: ", err)
 		return nil, err
 	}
 
-	logger.Info("resolver start success")
+	rb.logger.Info("resolver start success")
 	return r, nil
 }
 
 func (r *Resolver) ResolveNow(o resolver.ResolveNowOptions) {
 	if err := r.resolve(); err != nil {
-		logger.Error("Error in ResolveNow: ", err)
+		r.logger.Error("Error in ResolveNow: ", err)
 	}
 }
 
@@ -105,7 +99,7 @@ func (r *Resolver) resolve() error {
 		// 解析得到 node
 		node, err := ParseValue(v.Value)
 		if err != nil {
-			logger.Warnf("parse %s failed", string(v.Value))
+			r.logger.Warnf("parse %s failed", string(v.Value))
 			continue
 		}
 
@@ -130,7 +124,7 @@ func (r *Resolver) watcher() {
 			}
 		case <-ticker.C:
 			if err := r.resolve(); err != nil {
-				logger.Error("resolve  failed", err)
+				r.logger.Error("resolve  failed", err)
 			}
 		}
 	}
@@ -143,7 +137,7 @@ func (r *Resolver) update(events []*clientv3.Event) {
 			// 修改 addr
 			node, err := ParseValue(ev.Kv.Value)
 			if err != nil {
-				logger.Warnf("parse %s failed", string(ev.Kv.Value))
+				r.logger.Warnf("parse %s failed", string(ev.Kv.Value))
 				continue
 			}
 
@@ -156,6 +150,11 @@ func (r *Resolver) update(events []*clientv3.Event) {
 	}
 }
 
-func RegisterResolver(etcdAddrs []string) {
-	resolver.Register(&ResolverBuilder{EtcdAddrs: etcdAddrs})
+func RegisterResolver(etcdAddrs []string, logger *log.Logger) error {
+	if nil == logger {
+		return errors.New("please pass a valid logger")
+	}
+
+	resolver.Register(&ResolverBuilder{EtcdAddrs: etcdAddrs, logger: logger})
+	return nil
 }

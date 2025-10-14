@@ -6,7 +6,8 @@ import (
 )
 
 type Config struct {
-	Server *Server `yaml:"service"`
+	Server   *Server             `yaml:"service"`
+	Services map[string]*Service `yaml:"services"`
 }
 
 type Server struct {
@@ -14,6 +15,12 @@ type Server struct {
 	Version   string `yaml:"version"`
 	JwtSecret string `yaml:"jwtSecret"`
 	Metrics   string `yaml:"metrics"`
+}
+
+type Service struct {
+	Name    string   `yaml:"name"`
+	Addr    []string `yaml:"addr"`
+	Metrics []string `yaml:"metrics"`
 }
 
 var Conf Config

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/wolanm/search-engine/app/gateway/routes"
+	"github.com/wolanm/search-engine/app/gateway/rpc"
 	"github.com/wolanm/search-engine/config"
 	"github.com/wolanm/search-engine/loading"
 	"net/http"
@@ -34,6 +35,7 @@ func main() {
 	loading.Load()
 
 	// TODO: rpc 初始化
+	rpc.Init()
 
 	// TODO: etcd 注册
 

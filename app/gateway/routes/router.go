@@ -23,6 +23,7 @@ func NewRouter() *gin.Engine {
 		// TODO: 用户服务
 
 		// TODO: 索引平台
+		RegisterIndexPlatformRoutes(v1)
 
 		// TODO: 搜索平台
 
