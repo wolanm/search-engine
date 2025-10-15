@@ -3,7 +3,6 @@ package discovery
 import (
 	"context"
 	"errors"
-	"fmt"
 	log "github.com/wolanm/search-engine/logger"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc/resolver"
@@ -38,10 +37,11 @@ func (rb *ResolverBuilder) Scheme() string {
 func (rb *ResolverBuilder) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOptions) (resolver.Resolver, error) {
 	r := &Resolver{
 		closeCh: make(chan struct{}),
-		key:     fmt.Sprintf("/service/%s", target.Endpoint()),
+		key:     "/" + target.Endpoint(),
 		cc:      cc,
 		logger:  rb.logger,
 	}
+	rb.logger.Infof("target: %s", target.String())
 
 	var err error
 	r.cli, err = clientv3.New(clientv3.Config{
@@ -90,6 +90,7 @@ func (r *Resolver) start() error {
 func (r *Resolver) resolve() error {
 	resp, err := r.cli.Get(context.Background(), r.key, clientv3.WithPrefix())
 	if err != nil {
+		r.logger.Errorf("get %s --prefix failed: %v", r.key, err)
 		return err
 	}
 
@@ -107,6 +108,9 @@ func (r *Resolver) resolve() error {
 	}
 
 	err = r.cc.UpdateState(resolver.State{Addresses: ConvertToGRPCAddress(r.addrMap)})
+	if err != nil {
+		r.logger.Error("update state failed: ", err)
+	}
 	return err
 }
 
@@ -155,6 +159,6 @@ func RegisterResolver(etcdAddrs []string, logger *log.Logger) error {
 		return errors.New("please pass a valid logger")
 	}
 
-	resolver.Register(&ResolverBuilder{EtcdAddrs: etcdAddrs, logger: logger})
+	resolver.Register(&ResolverBuilder{EtcdAddrs: etcdAddrs, logger: logger, schema: "etcd"})
 	return nil
 }

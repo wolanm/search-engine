@@ -6,6 +6,6 @@ import (
 
 var Logger *log.Logger
 
-func initLogger() {
+func InitLogger() {
 	Logger = log.SimpleLogger("index_platform_service")
 }

@@ -6,7 +6,7 @@ import (
 )
 
 func RegisterIndexPlatformRoutes(rg *gin.RouterGroup) {
-	IndexPlatformGroup := rg.Group("/search_engine")
+	IndexPlatformGroup := rg.Group("/index_platform")
 	{
 		IndexPlatformGroup.POST("/build_index", http.BuildIndexByFiles)
 		IndexPlatformGroup.POST("/upload_file", http.UploadFile)

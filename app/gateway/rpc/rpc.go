@@ -7,6 +7,7 @@ import (
 	"github.com/wolanm/search-engine/config"
 	"github.com/wolanm/search-engine/consts"
 	pb "github.com/wolanm/search-engine/idl/pb/index_platform"
+	"github.com/wolanm/search-engine/util/discovery"
 	"io"
 	"mime/multipart"
 )
@@ -14,7 +15,12 @@ import (
 var indexPlatformCli *grpc_client.IndexPlatFormClient
 
 func Init() {
-	var err error
+	// 服务发现
+	err := discovery.RegisterResolver([]string{config.Conf.Etcd.Address}, gateway_logger.Logger)
+	if err != nil {
+		panic(err)
+	}
+
 	indexPlatformCli, err = grpc_client.NewIndexPlatformClient(config.Conf.Services[consts.IndexPlatform].Name)
 	if err != nil {
 		panic(err)

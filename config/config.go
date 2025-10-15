@@ -8,6 +8,7 @@ import (
 type Config struct {
 	Server   *Server             `yaml:"service"`
 	Services map[string]*Service `yaml:"services"`
+	Etcd     *Etcd               `yaml:"etcd"`
 }
 
 type Server struct {
@@ -21,6 +22,10 @@ type Service struct {
 	Name    string   `yaml:"name"`
 	Addr    []string `yaml:"addr"`
 	Metrics []string `yaml:"metrics"`
+}
+
+type Etcd struct {
+	Address string `yaml:"address"`
 }
 
 var Conf Config

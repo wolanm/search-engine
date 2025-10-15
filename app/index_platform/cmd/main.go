@@ -20,7 +20,8 @@ func runService() {
 		ServiceName: config.Conf.Services[consts.IndexPlatform].Name,
 		Endpoint:    grpcAddress,
 	}
-	etcdRegister, err := discovery.NewServiceRegistry([]string{grpcAddress}, indexplatform_logger.Logger)
+	etcdAddress := []string{config.Conf.Etcd.Address}
+	etcdRegister, err := discovery.NewServiceRegistry(etcdAddress, indexplatform_logger.Logger)
 	if err != nil {
 		panic(err)
 	}
@@ -52,6 +53,9 @@ func runService() {
 func main() {
 	// 配置加载
 	loading.Load()
+
+	// 日志初始化
+	indexplatform_logger.InitLogger()
 
 	// TODO: 注册 tracer
 

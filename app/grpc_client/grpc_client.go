@@ -9,7 +9,7 @@ import (
 
 func connectServer(serviceName string) (conn *grpc.ClientConn, err error) {
 	addr := fmt.Sprintf("%s%s/%s", consts.ServiceDomain, consts.ServicePrefix, serviceName)
-
+	fmt.Println("service addr: ", addr)
 	conn, err = grpc.NewClient(
 		addr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),

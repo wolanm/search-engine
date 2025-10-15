@@ -75,6 +75,7 @@ func (sr *ServiceRegistry) register() error {
 	if _, err = sr.client.Put(context.Background(), serviceKey, string(nodeData), clientv3.WithLease(sr.leaseID)); err != nil {
 		return err
 	}
+	sr.logger.Infof("%s:%s register success", serviceKey, string(nodeData))
 
 	return nil
 }
