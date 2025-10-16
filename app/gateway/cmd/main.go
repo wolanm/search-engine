@@ -34,10 +34,8 @@ func main() {
 	// 配置加载
 	loading.Load()
 
-	// TODO: rpc 初始化
+	// rpc 初始化
 	rpc.Init()
-
-	// TODO: etcd 注册
 
 	// 启动 web 服务
 	go startListen()

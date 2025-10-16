@@ -3,9 +3,9 @@ package rpc
 import (
 	"context"
 	"github.com/wolanm/search-engine/app/gateway/gateway_logger"
-	"github.com/wolanm/search-engine/app/grpc_client"
 	"github.com/wolanm/search-engine/config"
 	"github.com/wolanm/search-engine/consts"
+	"github.com/wolanm/search-engine/grpc_client"
 	pb "github.com/wolanm/search-engine/idl/pb/index_platform"
 	"github.com/wolanm/search-engine/util/discovery"
 	"io"
