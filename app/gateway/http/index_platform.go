@@ -2,6 +2,7 @@ package http
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/wolanm/search-engine/app/gateway/common"
 	"github.com/wolanm/search-engine/app/gateway/gateway_logger"
 	"github.com/wolanm/search-engine/app/gateway/response"
 	"github.com/wolanm/search-engine/app/gateway/rpc"
@@ -20,7 +21,10 @@ func UploadFile(ctx *gin.Context) {
 		return
 	}
 
-	rpcResp, err := rpc.UploadFile(ctx, file, fileHeader.Size)
+	rpcResp, err := rpc.UploadFile(ctx, file, common.FileInfo{
+		FileName: fileHeader.Filename,
+		FileSize: fileHeader.Size,
+	})
 	if err != nil {
 		gateway_logger.Logger.Error("rpc failed: ", err)
 		response.HTTPResponse(ctx, http.StatusInternalServerError, 0, "server error")

@@ -54,6 +54,9 @@ func main() {
 	// 配置加载
 	loading.Load()
 
+	// 分词器初始化
+	anylzer.InitSeg()
+
 	// 日志初始化
 	indexplatform_logger.InitLogger()
 

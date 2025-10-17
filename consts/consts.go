@@ -9,4 +9,6 @@ const (
 	IndexPlatform = "index_platform"
 
 	LeaseTTL = 10 // etcd 租约到期时间
+
+	DEFAULT_KV_LIST_CAPACITY = 1e3
 )

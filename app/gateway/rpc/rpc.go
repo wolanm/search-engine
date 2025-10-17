@@ -2,14 +2,17 @@ package rpc
 
 import (
 	"context"
+	"github.com/wolanm/search-engine/app/gateway/common"
 	"github.com/wolanm/search-engine/app/gateway/gateway_logger"
 	"github.com/wolanm/search-engine/config"
 	"github.com/wolanm/search-engine/consts"
 	"github.com/wolanm/search-engine/grpc_client"
 	pb "github.com/wolanm/search-engine/idl/pb/index_platform"
 	"github.com/wolanm/search-engine/util/discovery"
+	"google.golang.org/grpc/metadata"
 	"io"
 	"mime/multipart"
+	"strconv"
 )
 
 var indexPlatformCli *grpc_client.IndexPlatFormClient
@@ -27,8 +30,12 @@ func Init() {
 	}
 }
 
-func UploadFile(ctx context.Context, file multipart.File, filesize int64) (resp *pb.UploadResponse, err error) {
-	stream, err := indexPlatformCli.Client.UploadFile(ctx)
+func UploadFile(ctx context.Context, file multipart.File, fileInfo common.FileInfo) (resp *pb.UploadResponse, err error) {
+	md := metadata.New(map[string]string{
+		"filename": fileInfo.FileName,
+		"filesize": strconv.FormatInt(fileInfo.FileSize, 10),
+	})
+	stream, err := indexPlatformCli.Client.UploadFile(metadata.NewOutgoingContext(ctx, md))
 
 	// 读取文件，通过 stream 传输
 	if err != nil {
