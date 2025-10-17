@@ -4,12 +4,17 @@ go 1.24.0
 
 require (
 	github.com/RoaringBitmap/roaring v1.9.4
+	github.com/cespare/xxhash v1.1.0
 	github.com/gin-gonic/gin v1.11.0
 	github.com/go-ego/gse v0.80.3
 	github.com/kevwan/mapreduce/v2 v2.1.1
+	github.com/mailru/easyjson v0.9.1
+	github.com/orcaman/concurrent-map/v2 v2.0.1
+	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cast v1.10.0
 	github.com/spf13/viper v1.21.0
+	go.etcd.io/bbolt v1.4.3
 	go.etcd.io/etcd/client/v3 v3.6.5
 	google.golang.org/grpc v1.76.0
 	google.golang.org/protobuf v1.36.9
@@ -34,6 +39,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.3 // indirect
+	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect

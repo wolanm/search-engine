@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/wolanm/search-engine/app/index_platform/analyzer"
 	"github.com/wolanm/search-engine/app/index_platform/indexplatform_logger"
 	"github.com/wolanm/search-engine/app/index_platform/service"
 	"github.com/wolanm/search-engine/config"
@@ -55,10 +56,12 @@ func main() {
 	loading.Load()
 
 	// 分词器初始化
-	anylzer.InitSeg()
+	analyzer.InitSeg()
 
 	// 日志初始化
 	indexplatform_logger.InitLogger()
+
+	// TODO: 启动 kafka
 
 	// TODO: 注册 tracer
 

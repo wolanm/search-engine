@@ -10,5 +10,10 @@ const (
 
 	LeaseTTL = 10 // etcd 租约到期时间
 
-	DEFAULT_KV_LIST_CAPACITY = 1e3
+	DefaultKvListCapacity = 1e3 // 默认的 kvlist 容量
+
+	// 数据库相关
+	InvertedDbCount = 5           // 倒排索引 boltdb 的分片数
+	InvertedBucket  = "inverted"  // 倒排索引存储桶
+	TrieTreeBucket  = "trie_tree" // trie 树存储桶
 )

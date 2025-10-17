@@ -4,14 +4,20 @@ import (
 	"context"
 	"fmt"
 	"github.com/RoaringBitmap/roaring"
+	"github.com/cespare/xxhash"
 	"github.com/kevwan/mapreduce/v2"
+	"github.com/pkg/errors"
 	"github.com/spf13/cast"
 	"github.com/wolanm/search-engine/app/index_platform/analyzer"
 	"github.com/wolanm/search-engine/app/index_platform/indexplatform_logger"
 	"github.com/wolanm/search-engine/app/index_platform/input_data"
 	"github.com/wolanm/search-engine/consts"
 	pb "github.com/wolanm/search-engine/idl/pb/index_platform"
+	"github.com/wolanm/search-engine/repository/inverted_db"
+	"github.com/wolanm/search-engine/repository/trie_db"
 	"github.com/wolanm/search-engine/types"
+	"github.com/wolanm/search-engine/util/path"
+	"github.com/wolanm/search-engine/util/trie"
 	"google.golang.org/grpc/metadata"
 	"io"
 	"sort"
@@ -32,42 +38,53 @@ func (s *IndexPlatformSrv) BuildIndexService(ctx context.Context, req *pb.BuildI
 
 func (s *IndexPlatformSrv) UploadFile(stream pb.IndexPlatformService_UploadFileServer) (err error) {
 	ctx := stream.Context()
-	md, ok := metadata.FromIncomingContext(ctx)
 	streamRespFunc := func(code int64, message string) {
 		_ = stream.SendAndClose(&pb.UploadResponse{
 			Code:    code,
 			Message: message,
 		})
 	}
+
+	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		err = fmt.Errorf("metadata not provided")
 		indexplatform_logger.Logger.Error("UploadFile metadata.FromIncomingContext failed: ", err)
 		streamRespFunc(int64(consts.InvalidParam), "metadata not provided")
 		return
 	}
-	indexplatform_logger.Logger.Info("Received file: : ", md["filename"])
+	indexplatform_logger.Logger.Info("Received file: ", md["filename"][0])
 
-	// 如果 reduce 会并发运行，则需要考虑使用 concurrent map，当前 mapreduce 的 reduce 是非并发的
-	inverted_index := make(map[string]*roaring.Bitmap)
-	// TODO: 使用 trie 树 dictTrie := trie.NewTrie()
-	_, _ = mapreduce.MapReduce(func(source chan<- []byte) {
-		fileContent := make([]byte, 0)
-		for {
-			fileChunk, err := stream.Recv()
-			if err == io.EOF {
-				break
-			}
-
-			fileContent = append(fileContent, fileChunk.Content...)
+	// 接收和处理需要分离，否则 grpc 调用时间与 mapreduce 处理时间一样长
+	fileContent := make([]byte, 0)
+	for {
+		fileChunk, errx := stream.Recv()
+		if errx == io.EOF {
+			break
 		}
 
-		streamRespFunc(int64(consts.Success), "Upload File Success")
-		// TODO: 生成 document ID
+		fileContent = append(fileContent, fileChunk.Content...)
+	}
+	streamRespFunc(int64(consts.Success), "Upload File Success")
+	indexplatform_logger.Logger.Infof("read %s finish", md["filename"])
+
+	go buildIndex(md["filename"][0], fileContent)
+	return nil
+}
+
+func (s *IndexPlatformSrv) DownloadFile(file *pb.FileRequest, req pb.IndexPlatformService_DownloadFileServer) (err error) {
+	return nil
+}
+
+func buildIndex(filename string, fileContent []byte) {
+	// 如果 reduce 会并发运行，则需要考虑使用 concurrent map，当前 mapreduce 的 reduce 是非并发的
+	invertedIndex := make(map[string]*roaring.Bitmap)
+	dictTrie := trie.NewTrie()
+	_, _ = mapreduce.MapReduce(func(source chan<- []byte) {
 		source <- fileContent
 	}, func(item []byte, writer mapreduce.Writer[[]*types.KeyValue], cancel func(err error)) {
 		// TODO: 控制并发
 
-		keyValueList := make([]*types.KeyValue, 0, consts.DEFAULT_KV_LIST_CAPACITY)
+		keyValueList := make([]*types.KeyValue, 0, consts.DefaultKvListCapacity)
 		lines := strings.Split(string(item), "\r\n")
 		for _, line := range lines {
 			// 分词
@@ -87,12 +104,14 @@ func (s *IndexPlatformSrv) UploadFile(stream pb.IndexPlatformService_UploadFileS
 					}
 
 					keyValueList = append(keyValueList, &types.KeyValue{Key: v.Token, Value: cast.ToString(docStruct.DocId)})
-					// TODO: 构建前缀树
+					dictTrie.Insert(v.Token)
 				}
 			}
 
-			// TODO: 构建正排索引
-			go func(docStruct *types.Document) {}(docStruct)
+			// TODO: 构建正排索引，向量索引
+			go func(docStruct *types.Document) {
+				// kafka 发送数据
+			}(docStruct)
 
 			// shuffle 排序
 			sort.Sort(types.ByKey(keyValueList))
@@ -104,9 +123,10 @@ func (s *IndexPlatformSrv) UploadFile(stream pb.IndexPlatformService_UploadFileS
 		for kvList := range pipe {
 			for _, kv := range kvList {
 				var docIds *roaring.Bitmap
-				if docIds, ok = inverted_index[kv.Key]; !ok {
-					inverted_index[kv.Key] = roaring.New()
-					docIds = inverted_index[kv.Key]
+				var ok bool
+				if docIds, ok = invertedIndex[kv.Key]; !ok {
+					invertedIndex[kv.Key] = roaring.New()
+					docIds = invertedIndex[kv.Key]
 				}
 
 				docIds.AddInt(cast.ToInt(kv.Key))
@@ -114,24 +134,83 @@ func (s *IndexPlatformSrv) UploadFile(stream pb.IndexPlatformService_UploadFileS
 		}
 	})
 
-	// TODO: 存储倒排索引
 	go func() {
 		// TODO: 实现链路追踪后，这里的 ctx 要 clone
-		ctx := context.Background()
-		err := storeInvertedIndex(ctx, inverted_index)
+		newCtx := context.Background()
+		err := storeInvertedIndex(newCtx, invertedIndex)
 		if err != nil {
 			indexplatform_logger.Logger.Error("storeInvertedIndex error: ", err)
+		} else {
+			indexplatform_logger.Logger.Infof("storeInvertedIndex %s success", filename)
 		}
 	}()
-	// TODO: 存储前缀树
+
+	go func() {
+		newCtx := context.Background()
+		err := storeTrie(newCtx, dictTrie)
+		if err != nil {
+			indexplatform_logger.Logger.Error("storeTrie error: ", err)
+		} else {
+			indexplatform_logger.Logger.Infof("storeTrie %s success", filename)
+		}
+	}()
+}
+
+func storeInvertedIndex(ctx context.Context, invertedIndex map[string]*roaring.Bitmap) (err error) {
+	// 暂不考虑分片，内部知识库文档数据量比较小，且写入场景比较少，主要是读
+	dbPath := path.GetInvertedDBPath()
+	invertedDB, err := inverted_db.NewInvertedDB(dbPath)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		err = invertedDB.Close()
+		if err != nil {
+			indexplatform_logger.Logger.Error("close db failed: ", err)
+		}
+	}()
+
+	// 遍历 inverted_index, 存储到 db 中
+	for word, bitmap := range invertedIndex {
+		data, errx := bitmap.MarshalBinary()
+		if errx != nil {
+			indexplatform_logger.Logger.Error("marshal bitmap failed: ", errx)
+			continue
+		}
+		errx = invertedDB.StorageInverted(word, data)
+		if errx != nil {
+			indexplatform_logger.Logger.Error("StorageInverted failed: ", errx)
+			continue
+		}
+	}
 
 	return nil
 }
 
-func (s *IndexPlatformSrv) DownloadFile(file *pb.FileRequest, req pb.IndexPlatformService_DownloadFileServer) (err error) {
+func storeTrie(ctx context.Context, dict *trie.Trie) error {
+	dbPath := path.GetTrieDBPath()
+	trieDB, err := trie_db.NewTrieDB(dbPath)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		errx := trieDB.Close()
+		if errx != nil {
+			indexplatform_logger.Logger.Error("Close TrieDB failed: ", errx)
+		}
+	}()
+
+	err = trieDB.StorageDict(dict)
+	if err != nil {
+		return errors.WithMessage(err, "storageDict failed")
+	}
+
 	return nil
 }
 
-func storeInvertedIndex(ctx context.Context, inverted_index map[string]*roaring.Bitmap) (err error) {
-	
+// iHash 分片存储使用
+func iHash(key string) uint64 { //  nolint:golint,unused
+	hash := xxhash.Sum64String(key)
+	return hash
 }
