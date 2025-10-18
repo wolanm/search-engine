@@ -5,3 +5,8 @@ type Document struct {
 	Title string `json:"title"`
 	Body  string `json:"body"`
 }
+
+type FileInfo struct {
+	Filename string `json:"filename"`
+	Content  []byte `json:"content"`
+}
