@@ -1,0 +1,26 @@
+package kfk
+
+import (
+	"fmt"
+	"github.com/IBM/sarama"
+	"github.com/wolanm/search-engine/consts"
+)
+
+func GetDefaultConsumeConfig(assignor string) *sarama.Config {
+	configK := sarama.NewConfig()
+	configK.Version = sarama.DefaultVersion
+
+	switch assignor {
+	case consts.KafkaAssignorSticky:
+		configK.Consumer.Group.Rebalance.GroupStrategies = []sarama.BalanceStrategy{sarama.NewBalanceStrategySticky()}
+	case consts.KafkaAssignorRoundRobin:
+		configK.Consumer.Group.Rebalance.GroupStrategies = []sarama.BalanceStrategy{sarama.NewBalanceStrategyRoundRobin()}
+	case consts.KafkaAssignorRange:
+		configK.Consumer.Group.Rebalance.GroupStrategies = []sarama.BalanceStrategy{sarama.NewBalanceStrategyRange()}
+	default:
+		fmt.Printf("Unrecognized consumer group partition assignor: %s", assignor)
+	}
+	configK.Consumer.Offsets.Initial = sarama.OffsetOldest
+
+	return configK
+}

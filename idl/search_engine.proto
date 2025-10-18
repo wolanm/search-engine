@@ -1,0 +1,21 @@
+syntax="proto3";
+option go_package = "/search_engine;";
+
+message SearchRequest {
+  // @inject_tag:form:"query" uri:"query"
+  string query = 1;
+}
+
+// 返回大模型的回答
+message SearchResponse {
+  // @inject_tag:form:"answer" uri:"answer"
+  string answer = 1;
+  // @inject_tag:form:"code" uri:"code"
+  int64 code = 2;
+  // @inject_tag:form:"message" uri:"message"
+  string message = 3;
+}
+
+service SearchEngineService {
+  rpc Search(SearchRequest) returns (SearchResponse);
+}

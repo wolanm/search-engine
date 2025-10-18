@@ -11,6 +11,7 @@ import (
 	"github.com/wolanm/search-engine/app/index_platform/analyzer"
 	"github.com/wolanm/search-engine/app/index_platform/indexplatform_logger"
 	"github.com/wolanm/search-engine/app/index_platform/input_data"
+	"github.com/wolanm/search-engine/app/index_platform/kfk"
 	"github.com/wolanm/search-engine/consts"
 	pb "github.com/wolanm/search-engine/idl/pb/index_platform"
 	"github.com/wolanm/search-engine/repository/inverted_db"
@@ -22,6 +23,7 @@ import (
 	"io"
 	"sort"
 	"strings"
+	"sync"
 )
 
 type IndexPlatformSrv struct {
@@ -76,6 +78,11 @@ func (s *IndexPlatformSrv) DownloadFile(file *pb.FileRequest, req pb.IndexPlatfo
 }
 
 func buildIndex(filename string, fileContent []byte) {
+	// 构建正排索引
+
+	// 构建倒排索引, 向量索引
+	kfk.DocDataToKfk()
+
 	// 如果 reduce 会并发运行，则需要考虑使用 concurrent map，当前 mapreduce 的 reduce 是非并发的
 	invertedIndex := make(map[string]*roaring.Bitmap)
 	dictTrie := trie.NewTrie()
@@ -83,6 +90,8 @@ func buildIndex(filename string, fileContent []byte) {
 		source <- fileContent
 	}, func(item []byte, writer mapreduce.Writer[[]*types.KeyValue], cancel func(err error)) {
 		// TODO: 控制并发
+		ch := make(chan struct{}, consts.ConcurrentMapWorker)
+		var wg sync.WaitGroup
 
 		keyValueList := make([]*types.KeyValue, 0, consts.DefaultKvListCapacity)
 		lines := strings.Split(string(item), "\r\n")
@@ -108,16 +117,21 @@ func buildIndex(filename string, fileContent []byte) {
 				}
 			}
 
+			ch <- struct{}{}
+			wg.Add(1)
+
 			// TODO: 构建正排索引，向量索引
 			go func(docStruct *types.Document) {
 				// kafka 发送数据
+				defer wg.Done()
+				<-ch
 			}(docStruct)
-
-			// shuffle 排序
-			sort.Sort(types.ByKey(keyValueList))
-			writer.Write(keyValueList)
 		}
+		wg.Wait()
 
+		// shuffle 排序
+		sort.Sort(types.ByKey(keyValueList))
+		writer.Write(keyValueList)
 	}, func(pipe <-chan []*types.KeyValue, writer mapreduce.Writer[string], cancel func(error)) {
 		// 构建倒排索引
 		for kvList := range pipe {
