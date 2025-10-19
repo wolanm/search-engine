@@ -2,7 +2,6 @@ package milvus
 
 import (
 	"context"
-	"github.com/milvus-io/milvus-proto/go-api/v2/milvuspb"
 	"github.com/milvus-io/milvus/client/v2/column"
 	"github.com/milvus-io/milvus/client/v2/milvusclient"
 	"github.com/pkg/errors"
