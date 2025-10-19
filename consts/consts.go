@@ -41,5 +41,9 @@ const (
 	KafkaAssignorSticky     = "sticky"
 	KafkaAssignorRange      = "range"
 
-	KafkaIndexTopic = "index_topic"
+	// Topic
+	KafkaIndexTopic = "search-engine-index-topic"
+
+	// GroupID
+	InvertedIndexGroupID = "kafka-inverted-index-group-id"
 )

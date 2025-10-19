@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/wolanm/search-engine/app/index_platform/analyzer"
 	"github.com/wolanm/search-engine/app/index_platform/indexplatform_logger"
 	"github.com/wolanm/search-engine/app/index_platform/service"
 	"github.com/wolanm/search-engine/config"
@@ -55,9 +54,6 @@ func runService() {
 func main() {
 	// 配置加载
 	loading.Load()
-
-	// 分词器初始化
-	analyzer.InitSeg()
 
 	// 日志初始化
 	indexplatform_logger.InitLogger()

@@ -12,7 +12,7 @@ IDL_PATH = idl
 BIN = bin
 
 #SERVICES := gateway user favorite search_engine index_platform
-SERVICES := gateway search_engine index_platform
+SERVICES := gateway search_engine index_platform inverted_index
 service = $(word 1, $@)
 
 

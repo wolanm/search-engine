@@ -5,6 +5,7 @@ import (
 	"github.com/IBM/sarama"
 	"github.com/pkg/errors"
 	"github.com/wolanm/search-engine/app/inverted_index/inverted_index_logger"
+	"github.com/wolanm/search-engine/app/inverted_index/service"
 	"github.com/wolanm/search-engine/config"
 	"github.com/wolanm/search-engine/kfk"
 	"github.com/wolanm/search-engine/types"
@@ -41,6 +42,7 @@ func (consumer *InvertedIndexConsumer) ConsumeClaim(session sarama.ConsumerGroup
 			_ = fileInfo.UnmarshalJSON(msg.Value)
 
 			// 调用 mapreduce 处理
+			go service.BuildInvertedIndex(fileInfo)
 
 			inverted_index_logger.Logger.Infof("Message claimed: value = %s, timestamp = %v, topic = %s",
 				string(msg.Value), msg.Timestamp, msg.Topic)
@@ -74,7 +76,7 @@ func InvertedIndexKafkaConsume(ctx context.Context, topic, group, assignor strin
 		return err
 	}
 
-	isConsumptionPause := false
+	//isConsumptionPause := false
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 
@@ -102,8 +104,9 @@ func InvertedIndexKafkaConsume(ctx context.Context, topic, group, assignor strin
 	<-consumer.Ready
 	inverted_index_logger.Logger.Info("inverted index consumer start running")
 
-	sigusr1 := make(chan os.Signal, 1) // 用来控制消费的暂停和恢复
-	signal.Notify(sigusr1, syscall.SIGUSR1)
+	// SIGUSR1 是 linux 系统的信号
+	//sigusr1 := make(chan os.Signal, 1) // 用来控制消费的暂停和恢复
+	//signal.Notify(sigusr1, syscall.SIGUSR1)
 
 	sigterm := make(chan os.Signal, 1)
 	signal.Notify(sigterm, syscall.SIGTERM, syscall.SIGINT)
@@ -116,9 +119,9 @@ func InvertedIndexKafkaConsume(ctx context.Context, topic, group, assignor strin
 		case <-sigterm:
 			inverted_index_logger.Logger.Infof("terminating: via term signal")
 			keepRunning = false
-		case <-sigusr1:
-			isConsumptionPause = !isConsumptionPause
-			toggleConsumptionFlow(client, isConsumptionPause)
+			//case <-sigusr1:
+			//	isConsumptionPause = !isConsumptionPause
+			//	toggleConsumptionFlow(client, isConsumptionPause)
 		}
 	}
 
