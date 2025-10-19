@@ -4,8 +4,9 @@ import (
 	"context"
 	"github.com/wolanm/search-engine/app/inverted_index/analyzer"
 	"github.com/wolanm/search-engine/app/inverted_index/inverted_index_logger"
-	"github.com/wolanm/search-engine/app/inverted_index/kfk"
+	"github.com/wolanm/search-engine/app/inverted_index/service"
 	"github.com/wolanm/search-engine/consts"
+	"github.com/wolanm/search-engine/kfk/index_consumer"
 	"github.com/wolanm/search-engine/loading"
 	"sync"
 )
@@ -24,8 +25,8 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		err := kfk.InvertedIndexKafkaConsume(context.Background(), consts.KafkaIndexTopic, consts.InvertedIndexGroupID,
-			consts.KafkaAssignorRoundRobin)
+		err := index_consumer.IndexKafkaConsume(context.Background(), consts.KafkaIndexTopic, consts.InvertedIndexGroupID,
+			consts.KafkaAssignorRoundRobin, service.BuildInvertedIndex)
 		if err != nil {
 			inverted_index_logger.Logger.Error("stop inverted index consume: ", err)
 		}

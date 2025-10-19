@@ -16,6 +16,7 @@ const (
 	GatewayService       = "gateway_service"
 	IndexPlatformService = "index_platform_service"
 	InvertedIndexService = "inverted_index_service"
+	VectorIndexService   = "vector_index_service"
 	SearchEngineService  = "search_engine_service"
 )
 

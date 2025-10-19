@@ -1,11 +1,10 @@
-package kfk
+package index_consumer
 
 import (
 	"context"
 	"github.com/IBM/sarama"
 	"github.com/pkg/errors"
 	"github.com/wolanm/search-engine/app/inverted_index/inverted_index_logger"
-	"github.com/wolanm/search-engine/app/inverted_index/service"
 	"github.com/wolanm/search-engine/config"
 	"github.com/wolanm/search-engine/kfk"
 	"github.com/wolanm/search-engine/types"
@@ -15,20 +14,23 @@ import (
 	"syscall"
 )
 
-type InvertedIndexConsumer struct {
-	Ready chan bool
+type BuildIndexFromFile func(*types.FileInfo)
+
+type IndexConsumer struct {
+	Ready              chan bool
+	BuildIndexFromFile BuildIndexFromFile // 构建索引的回调
 }
 
-func (consumer *InvertedIndexConsumer) Setup(sarama.ConsumerGroupSession) error {
+func (consumer *IndexConsumer) Setup(sarama.ConsumerGroupSession) error {
 	close(consumer.Ready)
 	return nil
 }
 
-func (consumer *InvertedIndexConsumer) Cleanup(sarama.ConsumerGroupSession) error {
+func (consumer *IndexConsumer) Cleanup(sarama.ConsumerGroupSession) error {
 	return nil
 }
 
-func (consumer *InvertedIndexConsumer) ConsumeClaim(session sarama.ConsumerGroupSession,
+func (consumer *IndexConsumer) ConsumeClaim(session sarama.ConsumerGroupSession,
 	claim sarama.ConsumerGroupClaim) error {
 	for {
 		select {
@@ -41,8 +43,9 @@ func (consumer *InvertedIndexConsumer) ConsumeClaim(session sarama.ConsumerGroup
 			fileInfo := new(types.FileInfo)
 			_ = fileInfo.UnmarshalJSON(msg.Value)
 
-			// 调用 mapreduce 处理
-			go service.BuildInvertedIndex(fileInfo)
+			if consumer.BuildIndexFromFile != nil {
+				consumer.BuildIndexFromFile(fileInfo)
+			}
 
 			inverted_index_logger.Logger.Infof("Message claimed: value = %s, timestamp = %v, topic = %s",
 				string(msg.Value), msg.Timestamp, msg.Topic)
@@ -56,15 +59,16 @@ func (consumer *InvertedIndexConsumer) ConsumeClaim(session sarama.ConsumerGroup
 	return nil
 }
 
-// InvertedIndexKafkaConsume 倒排索引消费者建立
-func InvertedIndexKafkaConsume(ctx context.Context, topic, group, assignor string) (err error) {
+// IndexKafkaConsume 倒排索引消费者建立
+func IndexKafkaConsume(ctx context.Context, topic, group, assignor string, buildIndexCb BuildIndexFromFile) (err error) {
 	keepRunning := true
 	inverted_index_logger.Logger.Info("start a new sarama consumer")
 	sarama.Logger = inverted_index_logger.Logger
 
 	// 创建消费者组 TODO:多文件上传时，可以添加多个消费者提升性能
-	consumer := InvertedIndexConsumer{
-		Ready: make(chan bool),
+	consumer := IndexConsumer{
+		Ready:              make(chan bool),
+		BuildIndexFromFile: buildIndexCb,
 	}
 
 	consumerConfig := kfk.GetDefaultConsumeConfig(assignor) // 用来停止 Consume
