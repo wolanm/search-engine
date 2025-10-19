@@ -10,8 +10,8 @@ var Logger *log.Logger
 
 func InitLogger() {
 	Logger, _ = log.NewLogger(log.LoggerConfig{
-		Module: "search_engine_service",
-		LogDir: log2.LogDir("search_engine_service"),
+		Module: "SearchEngineService",
+		LogDir: log2.LogDir("SearchEngineService"),
 		Level:  logrus.InfoLevel,
 	})
 }

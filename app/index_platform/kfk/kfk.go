@@ -7,9 +7,9 @@ import (
 	"github.com/wolanm/search-engine/types"
 )
 
-func DocDataToKfk(doc *types.Document) error {
-	docBytes, _ := doc.MarshalJSON()
-	err := kfk.KafkaProducer(consts.KafkaIndexTopic, docBytes)
+func DocDataToKfk(fileInfo *types.FileInfo) error {
+	data, _ := fileInfo.MarshalJSON()
+	err := kfk.KafkaProducer(consts.KafkaIndexTopic, data)
 	if err != nil {
 		return errors.Wrap(err, "failed to produce document")
 	}

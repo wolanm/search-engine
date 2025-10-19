@@ -9,6 +9,7 @@ type Config struct {
 	Server   *Server             `yaml:"service"`
 	Services map[string]*Service `yaml:"services"`
 	Etcd     *Etcd               `yaml:"etcd"`
+	Kafka    *Kafka              `yaml:"kafka"`
 }
 
 type Server struct {
@@ -26,6 +27,10 @@ type Service struct {
 
 type Etcd struct {
 	Address string `yaml:"address"`
+}
+
+type Kafka struct {
+	Address []string `yaml:"address"`
 }
 
 var Conf Config

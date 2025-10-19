@@ -10,6 +10,7 @@ require (
 	github.com/go-ego/gse v0.80.3
 	github.com/kevwan/mapreduce/v2 v2.1.1
 	github.com/mailru/easyjson v0.9.1
+	github.com/milvus-io/milvus-proto/go-api/v2 v2.6.3
 	github.com/milvus-io/milvus/client/v2 v2.6.1
 	github.com/orcaman/concurrent-map/v2 v2.0.1
 	github.com/pkg/errors v0.9.1
@@ -86,7 +87,6 @@ require (
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/milvus-io/milvus-proto/go-api/v2 v2.6.3 // indirect
 	github.com/milvus-io/milvus/pkg/v2 v2.6.3 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect

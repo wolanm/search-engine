@@ -11,6 +11,14 @@ const (
 	LeaseTTL = 10 // etcd 租约到期时间
 )
 
+// 服务名
+const (
+	GatewayService       = "gateway_service"
+	IndexPlatformService = "index_platform_service"
+	InvertedIndexService = "inverted_index_service"
+	SearchEngineService  = "search_engine_service"
+)
+
 const (
 	DefaultKvListCapacity = 1e3 // 默认的 kvlist 容量
 )

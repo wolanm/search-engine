@@ -81,7 +81,15 @@ func buildIndex(filename string, fileContent []byte) {
 	// 构建正排索引
 
 	// 构建倒排索引, 向量索引
-	kfk.DocDataToKfk()
+	fileInfo := &types.FileInfo{
+		Filename: filename,
+		Content:  fileContent,
+	}
+	err := kfk.DocDataToKfk(fileInfo)
+	if err != nil {
+		indexplatform_logger.Logger.Error("send document to kafka failed", err)
+	}
+	return
 
 	// 如果 reduce 会并发运行，则需要考虑使用 concurrent map，当前 mapreduce 的 reduce 是非并发的
 	invertedIndex := make(map[string]*roaring.Bitmap)

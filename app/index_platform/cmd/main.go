@@ -7,6 +7,7 @@ import (
 	"github.com/wolanm/search-engine/config"
 	"github.com/wolanm/search-engine/consts"
 	pb "github.com/wolanm/search-engine/idl/pb/index_platform"
+	"github.com/wolanm/search-engine/kfk"
 	"github.com/wolanm/search-engine/loading"
 	"github.com/wolanm/search-engine/util/discovery"
 	"google.golang.org/grpc"
@@ -62,6 +63,7 @@ func main() {
 	indexplatform_logger.InitLogger()
 
 	// TODO: 启动 kafka
+	kfk.InitKafka(indexplatform_logger.Logger)
 
 	// TODO: 注册 tracer
 

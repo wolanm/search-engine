@@ -1,4 +1,4 @@
-package gateway_logger
+package inverted_index_logger
 
 import (
 	"github.com/sirupsen/logrus"
@@ -9,10 +9,10 @@ import (
 
 var Logger *log.Logger
 
-func init() {
+func InitLogger() {
 	Logger, _ = log.NewLogger(log.LoggerConfig{
-		Module: consts.GatewayService,
-		LogDir: log2.LogDir(consts.GatewayService),
+		Module: consts.InvertedIndexService,
+		LogDir: log2.LogDir(consts.InvertedIndexService),
 		Level:  logrus.InfoLevel,
 	})
 }

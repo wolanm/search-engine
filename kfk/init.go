@@ -17,4 +17,6 @@ func InitKafka(logger *log.Logger) {
 		return
 	}
 	GlobalKafkaClient = kafkaClient
+
+	logger.Info("create kafka client success on ", config.Conf.Kafka.Address)
 }
